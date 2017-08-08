@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -24,6 +24,10 @@ public class Player : MonoBehaviour
     public int maxHealth;
     private float immortalityTime;
     public GameObject deathScreen;
+
+    private bool spawning;
+    private float spawningTime;
+    private Vector3 spawnpoint;
 
     public bool looking;
     public GameObject MagicBallLeft, MagicBallRight;
@@ -51,22 +55,31 @@ public class Player : MonoBehaviour
 
         score = 0;
         SetScoreText();
+
+        spawnpoint = new Vector3(-0.5f, -0.5f, 0);
     }
 
     void FixedUpdate()
     {
         grounded = Physics2D.OverlapArea(ground_check_1.position, ground_check_2.position, what_is_ground);
 
-        if (knockbackCount <= 0 && !knockbacked)
+
+        // ---------- WHEN NO MOVEMENT ---------- \\
+        if (knockbackCount <= 0 && !knockbacked && !spawning)
             Movement();
-        else
+        else if (!spawning)
         {
             Damaged();
             knockbacked = true;
         }
 
+
+        // ---------- TIMERS ---------- \\
         if (Time.deltaTime > knockbackCount)
             knockbacked = false;
+
+        if (Time.time > spawningTime)
+            spawning = false;
     }
 
     void Update()
@@ -132,9 +145,12 @@ public class Player : MonoBehaviour
         }
 
 
-        // ---------- COLLIDING WITH SPIKES OR ENEMIES ---------- \\
+        // ---------- COLLIDING WITH SPIKES ---------- \\
         if (other.gameObject.CompareTag("Killer")) 
             Death();
+
+
+        // ---------- COLLIDING WITH ENEMIES ---------- \\
         if (other.gameObject.CompareTag("Enemy"))
         {
             if (other.transform.position.x < transform.position.x)
@@ -150,10 +166,14 @@ public class Player : MonoBehaviour
         }
 
 
-        // ---------- CHECKPOINT ---------- \\
+        // ---------- CHECKPOINTS ---------- \\
         if (other.gameObject.CompareTag("Checkpoint"))
+        {
             other.gameObject.GetComponent<Checkpoint>().Checked = true;
+            other.gameObject.GetComponent<BoxCollider2D>().enabled = false;
 
+            spawnpoint = other.gameObject.GetComponent<Transform>().position;
+        }
     }
 
 
@@ -193,26 +213,27 @@ public class Player : MonoBehaviour
         if (Time.time > immortalityTime)
         {
             health -= 1;
-            immortalityTime = Time.time + 1;
+            immortalityTime = Time.time + 0.5f;
         }
 
 
         // ---------- GAME OVER ---------- \\
         if (health <= 0)
-        {
             deathScreen.SetActive(true);
-        }
     }
     void Death()
     {
-        // ---------- PLAYER TO START POSITION ---------- \\
+        // ---------- PLAYER TO CHECKPOINT ---------- \\
         if (health > 1)
         {
-            my_rigidbody.transform.SetPositionAndRotation(new Vector3(-0.5f, -0.5f, 0), new Quaternion(0, 0, 0, 0));
+            my_rigidbody.transform.SetPositionAndRotation(new Vector3 (spawnpoint.x, spawnpoint.y + 2, spawnpoint.z), new Quaternion(0, 0, 0, 0));
+            my_rigidbody.velocity = new Vector2(0, 0);
+
+            spawning = true;
+            spawningTime = Time.time + 0.45f;
 
             transform.localScale = new Vector3(1f, 1f, 1f);
             looking = false;
-
         }
 
 
@@ -220,15 +241,13 @@ public class Player : MonoBehaviour
         if (Time.time > immortalityTime)
         {
             health -= 1;
-            immortalityTime = Time.time + 1;
+            immortalityTime = Time.time + 0.5f;
         }
 
 
         // ---------- GAME OVER ---------- \\
         if (health <= 0)
-        {
             deathScreen.SetActive(true);
-        }
     }
 
     void SetScoreText()
