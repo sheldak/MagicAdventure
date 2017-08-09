@@ -46,6 +46,14 @@ public class Player : MonoBehaviour
     public float knockbackPower;
     private bool knockbacked;
 
+    public int exp;
+    public int currentLevel;
+    public Text levelNumber;
+    public GameObject canvas;
+    public GameObject levelUp;
+    private float levelUpTime;
+    private bool levelUpShown;
+
 
     // ---------- GAME CODE ---------- \\
     void Start()
@@ -53,8 +61,8 @@ public class Player : MonoBehaviour
         my_rigidbody = GetComponent<Rigidbody2D>();
         anim = GetComponent<Animator>();
 
-        score = 0;
         SetScoreText();
+        SetLevel();
 
         spawnpoint = new Vector3(-0.5f, -0.5f, 0);
     }
@@ -80,6 +88,13 @@ public class Player : MonoBehaviour
 
         if (Time.time > spawningTime)
             spawning = false;
+
+        if (Time.time > levelUpTime && levelUpTime != 0)
+        {
+            Destroy(GameObject.FindGameObjectWithTag("Level Up"));
+            exp = 0;
+            levelUpShown = false;
+        }
     }
 
     void Update()
@@ -116,6 +131,17 @@ public class Player : MonoBehaviour
 
         if (Time.time > shotAnimTime)
             shooting = false;
+
+
+        // ---------- LEVEL UP ---------- \\
+        if (exp == 10 && !levelUpShown)
+        {
+            Instantiate(levelUp, canvas.transform);
+            levelUpTime = Time.time + 2;
+            currentLevel += 1;
+            SetLevel();
+            levelUpShown = true;
+        }
 
 
         // ---------- PLAYER ANIMATIONS ---------- \\
@@ -253,6 +279,11 @@ public class Player : MonoBehaviour
     void SetScoreText()
     {
         scoreText.text = "Score: " + score.ToString();
+    }
+
+    void SetLevel()
+    {
+        levelNumber.text = currentLevel.ToString();
     }
 
     void Shot()
